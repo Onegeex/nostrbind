@@ -1,0 +1,67 @@
+.app { max-width: 720px; margin: 0 auto; padding: 20px 16px 48px; }
+.top { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.brand { font-weight: 700; font-size: 18px; display: flex; align-items: center; gap: 8px; }
+.logo { display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 8px; background: var(--accent); color: #fff; font-size: 16px; }
+.hero h1 { font-size: clamp(24px, 5vw, 34px); line-height: 1.15; margin: 36px 0 10px; letter-spacing: -0.02em; }
+.hero p { margin: 0 0 24px; max-width: 60ch; }
+.muted { color: var(--muted); }
+.small { font-size: 13px; }
+.mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; word-break: break-all; }
+.error { color: var(--bad); background: var(--bad-bg); padding: 8px 12px; border-radius: 8px; font-size: 14px; }
+.success { color: var(--accent-ink); background: var(--ok-bg); padding: 8px 12px; border-radius: 8px; font-size: 14px; }
+
+.btn { font: inherit; font-size: 14px; font-weight: 600; padding: 9px 16px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); color: var(--ink); cursor: pointer; }
+.btn:hover:not(:disabled) { border-color: var(--accent); }
+.btn:disabled { opacity: .55; cursor: not-allowed; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.link { font: inherit; background: none; border: 0; padding: 0; color: var(--accent-ink); cursor: pointer; text-decoration: underline; }
+.chip { font: inherit; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--card); color: var(--ink); cursor: pointer; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+.dot.ok { background: var(--accent); }
+.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin-bottom: 16px; }
+.tabs button { font: inherit; font-weight: 600; font-size: 14px; background: none; border: 0; border-bottom: 2px solid transparent; padding: 10px 12px; color: var(--muted); cursor: pointer; }
+.tabs button.active { color: var(--ink); border-bottom-color: var(--accent); }
+
+.search { display: flex; gap: 8px; }
+.search input, .amount, select { font: inherit; font-size: 15px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); color: var(--ink); }
+.search input { flex: 1; min-width: 0; }
+.search input:focus, .amount:focus, select:focus { outline: 2px solid var(--accent); outline-offset: 0; }
+select { display: block; width: 100%; margin-top: 4px; }
+.amount { width: 130px; }
+.unit { font-weight: 600; color: var(--muted); }
+
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 20px; margin-top: 16px; }
+.card.verified { border-color: var(--accent); }
+.profile { display: flex; gap: 14px; align-items: center; }
+.profile h2 { margin: 0; font-size: 20px; }
+.profile p { margin: 2px 0 0; }
+.profile .badge { margin-left: auto; }
+.avatar { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; flex: none; }
+.avatar.placeholder { background: var(--line); }
+.badge { font-size: 13px; font-weight: 700; padding: 5px 12px; border-radius: 999px; white-space: nowrap; }
+.badge.ok { background: var(--ok-bg); color: var(--accent-ink); }
+.badge.bad { background: var(--bad-bg); color: var(--bad); }
+.addr { margin: 16px 0 8px; font-size: 14px; display: flex; gap: 8px; flex-wrap: wrap; align-items: baseline; }
+.checks { list-style: none; padding: 0; margin: 8px 0 12px; display: grid; gap: 6px; font-size: 14px; }
+.checks li { display: flex; gap: 8px; }
+.checks .mark { font-weight: 700; width: 16px; flex: none; }
+.checks li.ok .mark { color: var(--accent); }
+.checks li.bad .mark { color: var(--bad); }
+.pay { border-top: 1px solid var(--line); margin-top: 16px; padding-top: 16px; }
+.pay h3, .steps h3 { margin: 0 0 8px; font-size: 16px; }
+
+.steps { list-style: none; padding: 0; margin: 0; display: grid; gap: 20px; }
+.steps li { padding-left: 14px; border-left: 3px solid var(--line); }
+.steps li.done { border-left-color: var(--accent); }
+.steps p { margin: 4px 0; }
+.nsec { display: block; margin-top: 6px; padding: 8px; background: var(--bad-bg); border-radius: 8px; }
+
+footer { margin-top: 40px; text-align: center; }
+
+@media (max-width: 520px) {
+  .profile { flex-wrap: wrap; }
+  .profile .badge { margin-left: 0; }
+  .search { flex-direction: column; }
+}
