@@ -28,9 +28,12 @@ export async function latestCommitmentFrom(address: string) {
     .sort((a, b) => (a.height <= 0 ? Infinity : a.height) - (b.height <= 0 ? Infinity : b.height))
     .reverse()
     .slice(0, HISTORY_SCAN);
-  for (const h of ordered) {
-    const raw = await getRawTx(h.tx_hash);
-    const parsed = parseCommitmentTx(h.tx_hash, raw);
+  // Fetch in parallel, then pick the newest match in order.
+  const raws = await Promise.all(ordered.map((h) => getRawTx(h.tx_hash).catch(() => null)));
+  for (let i = 0; i < ordered.length; i++) {
+    const raw = raws.at(i);
+    if (!raw) continue;
+    const parsed = parseCommitmentTx(ordered[i].tx_hash, raw);
     if (parsed && parsed.signerAddresses.includes(address)) return parsed;
   }
   return null;
