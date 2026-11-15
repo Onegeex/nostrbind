@@ -454,7 +454,7 @@ export default function App() {
       </main>
 
       <footer className="muted small">
-        Built for BCH BLAZE 2026 · <a href="https://github.com/" target="_blank" rel="noreferrer">Source</a> · Proofs: Nostr event kind 30078 + OP_RETURN "NBND"
+        Built for BCH BLAZE 2026 · <a href="https://github.com/Onegeex/nostrbind" target="_blank" rel="noreferrer">Source</a> · Proofs: Nostr event kind 30078 + OP_RETURN "NBND"
       </footer>
     </div>
   );
