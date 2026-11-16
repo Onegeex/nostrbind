@@ -36,6 +36,15 @@ All five must pass for the green **Verified** badge.
 
 **Key rotation:** bind again. The new event replaces the old one (replaceable kind), and a newer commitment from the address supersedes the older one.
 
+## Free verified names
+
+Every passport can claim a free name like `abiola@nostrbind.vercel.app`, a standard Nostr address (NIP-05) that clients such as Damus and Primal display.
+
+- The name rides in the binding event as an `["n", "abiola"]` tag, so there is no database.
+- `/.well-known/nostr.json?name=abiola` (a Vercel function in `server/nip05.ts`) finds every binding that claims the name, fully re-verifies each one, and answers only for a verified passport.
+- If several verified passports claim the same name, the one whose Bitcoin Cash commitment **confirmed first** owns it. Block height can't be back-dated, unlike a Nostr event's timestamp.
+- After binding, one click adds the name to your Nostr profile (every other profile field is kept).
+
 ## Features
 
 - **Look up & pay:** search by npub, NIP-05 (`name@domain`) or BCH address, see each check, and pay a verified identity in BCH through WizardConnect.
@@ -58,7 +67,8 @@ All five must pass for the green **Verified** badge.
 npm install
 npm run dev        # http://localhost:5173
 npm run build      # production build in dist/
-npx tsx tests/logic.test.ts   # proof logic tests (offline)
+npm run build:api  # bundle server/nip05.ts into api/nip05.mjs (commit the result)
+npx tsx tests/logic.test.ts   # proof + name-ownership tests (offline)
 ```
 
 You need a WizardConnect-capable BCH wallet (for example Cashonize 0.9+) with a little BCH (0.0001 BCH is plenty) to bind.
