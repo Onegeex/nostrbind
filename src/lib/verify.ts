@@ -15,14 +15,18 @@ export interface VerifyResult {
   address?: string;
   txid?: string;
   boundAt?: number;
+  /** Block height of the commitment tx; 0 or less = unconfirmed. */
+  height?: number;
+  /** Name claimed in the binding event (ownership is decided by the name endpoint). */
+  name?: string;
   checks: Check[];
 }
 
 const HISTORY_SCAN = 30;
 
 /** Latest NostrBind commitment signed by this address (newest first by block height). */
-export async function latestCommitmentFrom(address: string) {
-  const history = await getHistory(addressToLockingBytecode(address));
+export async function latestCommitmentFrom(address: string, known?: { tx_hash: string; height: number }[]) {
+  const history = known ?? (await getHistory(addressToLockingBytecode(address)));
   // height 0 / -1 = unconfirmed (newest). Sort newest first.
   const ordered = [...history]
     .sort((a, b) => (a.height <= 0 ? Infinity : a.height) - (b.height <= 0 ? Infinity : b.height))
@@ -61,6 +65,7 @@ export async function verifyPubkey(pubkey: string, known?: BindingClaim | null):
   result.address = address;
   result.txid = claim.txid;
   result.boundAt = claim.event.created_at;
+  result.name = claim.name;
 
   let raw: string;
   try {
@@ -94,7 +99,9 @@ export async function verifyPubkey(pubkey: string, known?: BindingClaim | null):
   // Has this address since been bound to a different key? Newest commitment wins.
   let stillCurrent = true;
   try {
-    const latest = await latestCommitmentFrom(address);
+    const history = await getHistory(addressToLockingBytecode(address));
+    result.height = history.find((h) => h.tx_hash === claim.txid)?.height ?? 0;
+    const latest = await latestCommitmentFrom(address, history);
     if (latest && latest.nostrPubkey !== pubkey) stillCurrent = false;
   } catch {
     /* history lookup is best-effort */

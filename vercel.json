@@ -1,0 +1,4 @@
+{
+  "rewrites": [{ "source": "/.well-known/nostr.json", "destination": "/api/nip05" }],
+  "functions": { "api/nip05.mjs": { "maxDuration": 15 } }
+}

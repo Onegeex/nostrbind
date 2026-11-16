@@ -73,10 +73,13 @@ export function shortNpub(hex: string): string {
   return `${n.slice(0, 12)}…${n.slice(-6)}`;
 }
 
-const pool = new SimplePool();
+// Created on first use so a server can install its WebSocket implementation first.
+let _pool: SimplePool | null = null;
+const getPool = () => (_pool ??= new SimplePool());
 
 /** The event a user signs: "my BCH identity is <address>, committed in <txid>". */
-export function bindingTemplate(address: string, txid: string): EventTemplate {
+export function bindingTemplate(address: string, txid: string, name?: string): EventTemplate {
+  const nameTags = name ? [["n", name]] : [];
   return {
     kind: BINDING_KIND,
     created_at: Math.floor(Date.now() / 1000),
@@ -85,13 +88,14 @@ export function bindingTemplate(address: string, txid: string): EventTemplate {
       // NIP-39 style external identity claim: platform "bch", identity, proof (the commitment txid)
       ["i", `bch:${address}`, txid],
       ["alt", "NostrBind: binds this Nostr key to a Bitcoin Cash address"],
+      ...nameTags,
     ],
-    content: JSON.stringify({ v: 1, address, txid }),
+    content: JSON.stringify({ v: 1, address, txid, ...(name ? { name } : {}) }),
   };
 }
 
 export async function publish(event: Event): Promise<number> {
-  const results = await Promise.allSettled(pool.publish(RELAYS, event));
+  const results = await Promise.allSettled(getPool().publish(RELAYS, event));
   const ok = results.filter((r) => r.status === "fulfilled").length;
   if (ok === 0) throw new Error("No relay accepted the binding event. Try again in a moment.");
   return ok;
@@ -101,11 +105,12 @@ export interface BindingClaim {
   event: Event;
   address: string;
   txid: string;
+  name?: string;
 }
 
 /** Latest valid binding event from this pubkey, or null. */
 export async function fetchBinding(pubkey: string): Promise<BindingClaim | null> {
-  const events = await pool.querySync(
+  const events = await getPool().querySync(
     RELAYS,
     { kinds: [BINDING_KIND], authors: [pubkey], "#d": [BINDING_D_TAG] },
     { maxWait: 4000 },
@@ -122,12 +127,13 @@ export async function fetchBinding(pubkey: string): Promise<BindingClaim | null>
 
 function claimFrom(e: Event): BindingClaim | null {
   const tag = e.tags.find((t) => t[0] === "i" && t[1]?.startsWith("bch:"));
-  return tag && tag[2] ? { event: e, address: tag[1].slice(4), txid: tag[2] } : null;
+  const name = e.tags.find((t) => t[0] === "n")?.[1];
+  return tag && tag[2] ? { event: e, address: tag[1].slice(4), txid: tag[2], ...(name ? { name } : {}) } : null;
 }
 
 /** Most recent bindings across all users, newest first, one per pubkey. */
 export async function fetchRecentBindings(limit = 24): Promise<BindingClaim[]> {
-  const events = await pool.querySync(
+  const events = await getPool().querySync(
     RELAYS,
     { kinds: [BINDING_KIND], "#d": [BINDING_D_TAG], limit: limit * 2 },
     { maxWait: 4000 },
@@ -145,10 +151,48 @@ export async function fetchRecentBindings(limit = 24): Promise<BindingClaim[]> {
     .slice(0, limit);
 }
 
+/** Binding events (from anyone) that claim this name. */
+export async function fetchNameClaims(name: string): Promise<BindingClaim[]> {
+  const events = await getPool().querySync(
+    RELAYS,
+    { kinds: [BINDING_KIND], "#d": [BINDING_D_TAG], "#n": [name] },
+    { maxWait: 4000 },
+  );
+  return events
+    .filter((e) => verifyEvent(e))
+    .map(claimFrom)
+    .filter((c): c is BindingClaim => c !== null && c.name === name);
+}
+
+/** Raw latest kind-0 content, so a profile update keeps every existing field. */
+export async function fetchProfileRaw(pubkey: string): Promise<{ content: Record<string, unknown>; tags: string[][] } | null> {
+  const events = await getPool().querySync(RELAYS, { kinds: [0], authors: [pubkey] }, { maxWait: 3500 });
+  const latest = events.filter((e) => verifyEvent(e)).sort((a, b) => b.created_at - a.created_at)[0];
+  if (!latest) return null;
+  try {
+    return { content: JSON.parse(latest.content) as Record<string, unknown>, tags: latest.tags };
+  } catch {
+    return null;
+  }
+}
+
+/** Republish the profile with nip05 set, keeping every other field. */
+export async function setProfileNip05(signer: NostrSigner, nip05: string): Promise<void> {
+  const current = await fetchProfileRaw(signer.pubkey);
+  const content = { ...(current?.content ?? {}), nip05 };
+  const event = await signer.sign({
+    kind: 0,
+    created_at: Math.floor(Date.now() / 1000),
+    tags: current?.tags ?? [],
+    content: JSON.stringify(content),
+  });
+  await publish(event);
+}
+
 export async function fetchProfiles(pubkeys: string[]): Promise<Map<string, Profile>> {
   const out = new Map<string, Profile>();
   if (pubkeys.length === 0) return out;
-  const events = await pool.querySync(RELAYS, { kinds: [0], authors: pubkeys }, { maxWait: 3500 });
+  const events = await getPool().querySync(RELAYS, { kinds: [0], authors: pubkeys }, { maxWait: 3500 });
   const newest = new Map<string, Event>();
   for (const e of events) {
     const p = newest.get(e.pubkey);
@@ -187,7 +231,7 @@ export interface Profile {
 }
 
 export async function fetchProfile(pubkey: string): Promise<Profile | null> {
-  const ev = await pool.get(RELAYS, { kinds: [0], authors: [pubkey] }, { maxWait: 3000 });
+  const ev = await getPool().get(RELAYS, { kinds: [0], authors: [pubkey] }, { maxWait: 3000 });
   if (!ev) return null;
   try {
     return JSON.parse(ev.content) as Profile;

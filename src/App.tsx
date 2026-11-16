@@ -3,6 +3,7 @@ import { isValidAddress } from "./lib/bch";
 import { EXPLORER_TX } from "./lib/config";
 import { fetchProfile, resolvePubkey, type Profile } from "./lib/nostr";
 import { verifyAddress, verifyPubkey, type VerifyResult } from "./lib/verify";
+import { nameOwner } from "./lib/names";
 import { Passport, type PassportData } from "./components/Passport";
 import { PayPanel, shareLinkFor } from "./components/PayPanel";
 import { Directory } from "./components/Directory";
@@ -14,7 +15,8 @@ type View = "inspect" | "apply";
 
 const SPECIMEN: PassportData = {
   pubkey: "0".repeat(64),
-  profile: { name: "Ada Okonkwo", nip05: "ada@example.com" },
+  profile: { name: "Ada Okonkwo" },
+  boundName: `ada@${location.host}`,
   address: "bitcoincash:qrspecimen7x4a9m2d0v5k8w3n6c1e4j9h2p5s8u",
   boundAt: 1794700800,
   verified: true,
@@ -30,6 +32,7 @@ function Inspect({ query, onQuery }: { query: string; onQuery: (q: string) => vo
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<VerifyResult | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [boundName, setBoundName] = useState<string | undefined>();
   const [error, setError] = useState<string | null>(null);
   const resultRef = useRef<HTMLDivElement>(null);
 
@@ -39,6 +42,7 @@ function Inspect({ query, onQuery }: { query: string; onQuery: (q: string) => vo
     setError(null);
     setResult(null);
     setProfile(null);
+    setBoundName(undefined);
     try {
       let r: VerifyResult | null;
       if (isValidAddress(q)) {
@@ -49,8 +53,12 @@ function Inspect({ query, onQuery }: { query: string; onQuery: (q: string) => vo
         if (!pk) throw new Error("That isn't an npub, a Nostr address like name@domain.com, or a Bitcoin Cash address.");
         r = await verifyPubkey(pk);
       }
-      const p = await fetchProfile(r.pubkey).catch(() => null);
+      const [p, owner] = await Promise.all([
+        fetchProfile(r.pubkey).catch(() => null),
+        r.verified && r.name ? nameOwner(r.name).catch(() => null) : Promise.resolve(null),
+      ]);
       setProfile(p);
+      if (owner && owner === r.pubkey && r.name) setBoundName(`${r.name}@${location.host}`);
       setResult(r);
       requestAnimationFrame(() => resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
     } catch (e) {
@@ -111,7 +119,7 @@ function Inspect({ query, onQuery }: { query: string; onQuery: (q: string) => vo
       {result && (
         <section className="result" ref={resultRef} aria-label="Passport check result">
           <Passport
-            data={{ ...result, profile }}
+            data={{ ...result, profile, boundName }}
             stampKey={result.pubkey + String(result.verified)}
             explorerUrl={EXPLORER_TX}
           />
@@ -120,7 +128,7 @@ function Inspect({ query, onQuery }: { query: string; onQuery: (q: string) => vo
               to={result.address}
               recipient={result.pubkey}
               name={name}
-              link={shareLinkFor(result.pubkey, profile?.nip05)}
+              link={shareLinkFor(result.pubkey, boundName ?? profile?.nip05)}
             />
           ) : (
             <aside className="panel">

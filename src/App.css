@@ -257,6 +257,24 @@
 .field select { min-height: 44px; border-radius: 10px; border: 1.5px solid var(--ink); background: #fff; padding: 0 12px; font-weight: 500; }
 .nsec { display: block; margin-top: 8px; padding: 10px 12px; border-radius: 8px; background: #b8283f12; color: var(--stamp-bad); }
 
+.name-field { margin: 0 0 16px; }
+.name-input {
+  display: flex; align-items: center; min-height: 48px; border: 1.5px solid var(--ink); border-radius: 10px;
+  background: #fff; padding: 0 0 0 14px; overflow: hidden;
+}
+.name-input:focus-within { outline: 3px solid var(--cover); outline-offset: 2px; }
+.name-input input { flex: 1; min-width: 0; border: 0; background: none; font-size: 16px; font-weight: 700; padding: 0; }
+.name-input input:focus { outline: none; }
+.name-host { padding: 0 14px; color: var(--ink-soft); font-weight: 500; white-space: nowrap; }
+.name-status { font-weight: 500; color: var(--ink-soft); }
+.name-status.free, .name-status.yours { color: var(--stamp-ok); }
+.name-status.taken { color: var(--stamp-bad); }
+
+.done-card { display: grid; gap: 14px; justify-items: start; padding: 28px; border: 1.5px solid var(--ink); border-radius: 14px; background: var(--sheet); }
+.done-card h2 { margin: 0; font-size: clamp(22px, 2.6vw, 30px); font-weight: 800; letter-spacing: -0.02em; overflow-wrap: anywhere; }
+.done-card .hint { margin: 0; }
+.done-card .saved { margin: 0; font-weight: 700; color: var(--stamp-ok); }
+
 /* ---------- footer ---------- */
 
 .colophon { border-top: 1px solid var(--line); padding: 28px 0 40px; color: var(--ink-soft); font-size: 14px; }

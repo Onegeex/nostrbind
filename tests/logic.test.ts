@@ -6,6 +6,7 @@ import {
   normaliseAddress, parseCommitmentTx, pubkeyToAddress, satsToBch, txidOf, type Utxo,
 } from "../src/lib/bch";
 import { bindingTemplate } from "../src/lib/nostr";
+import { nameError, normaliseName, pickOwner } from "../src/lib/names";
 
 const G = hexToBin("0279BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798");
 const addr = pubkeyToAddress(G);
@@ -71,4 +72,21 @@ const tag = ev.tags.find((t) => t[0] === "i")!;
 assert.equal(tag[1], `bch:${addr}`);
 assert.equal(tag[2], "cd".repeat(32));
 console.log("nostr binding event ok");
+// 8. names: binding carries the claim; earliest confirmed commitment owns a name
+const named = finalizeEvent(bindingTemplate(addr, "cd".repeat(32), "abiola"), sk);
+assert.deepEqual(named.tags.find((t) => t[0] === "n"), ["n", "abiola"]);
+assert.ok(verifyEvent(named));
+assert.equal(nameError(normaliseName("  Abiola ")), null);
+assert.ok(nameError("a"));
+assert.ok(nameError("bad name"));
+assert.ok(nameError("-dash"));
+const owner = pickOwner([
+  { pubkey: "b", height: 0, createdAt: 1 },        // unconfirmed, earliest event
+  { pubkey: "c", height: 900010, createdAt: 50 },
+  { pubkey: "a", height: 900002, createdAt: 99 },  // confirmed first -> wins
+]);
+assert.equal(owner?.pubkey, "a");
+assert.equal(pickOwner([{ pubkey: "x", height: 0, createdAt: 5 }, { pubkey: "y", height: -1, createdAt: 2 }])?.pubkey, "y");
+assert.equal(pickOwner([]), null);
+console.log("names ok");
 console.log("ALL TESTS PASSED");

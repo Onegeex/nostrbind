@@ -5,9 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && tsc -p tsconfig.server.json && vite build",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "build:api": "esbuild server/nip05.ts --bundle --platform=node --format=esm --target=node22 --outfile=api/nip05.mjs --external:bufferutil --external:utf-8-validate --banner:js=\"import { createRequire } from \\\"module\\\"; const require = createRequire(import.meta.url);\""
   },
   "dependencies": {
     "@bitauth/libauth": "3.1.0-next.8",
@@ -20,14 +21,17 @@
     "nostr-tools": "2.26.1",
     "qrcode": "1.5.4",
     "react": "19.3.1",
-    "react-dom": "19.3.1"
+    "react-dom": "19.3.1",
+    "ws": "8.23.0"
   },
   "devDependencies": {
     "@types/node": "24.19.2",
     "@types/qrcode": "1.5.6",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
+    "@types/ws": "8.18.2",
     "@vitejs/plugin-react": "6.3.0",
+    "esbuild": "0.28.2",
     "oxlint": "1.93.0",
     "typescript": "7.0.2",
     "vite": "8.3.8"

@@ -104,6 +104,8 @@ export interface PassportData {
   verified: boolean;
   checks: { label: string; ok: boolean; detail?: string }[];
   txid?: string;
+  /** "name@host" when this passport owns a NostrBind name. */
+  boundName?: string;
 }
 
 function fmtDate(ts?: number) {
@@ -152,8 +154,8 @@ export function Passport({
             <dd>{name}</dd>
           </div>
           <div>
-            <dt>Nostr address</dt>
-            <dd>{data.profile?.nip05?.replace(/^_@/, "") || "None set"}</dd>
+            <dt>{data.boundName ? "NostrBind name" : "Nostr address"}</dt>
+            <dd>{data.boundName || data.profile?.nip05?.replace(/^_@/, "") || "None set"}</dd>
           </div>
           <div>
             <dt>Date of binding</dt>
