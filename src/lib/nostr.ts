@@ -114,10 +114,68 @@ export async function fetchBinding(pubkey: string): Promise<BindingClaim | null>
     .filter((e) => e.pubkey === pubkey && verifyEvent(e))
     .sort((a, b) => b.created_at - a.created_at);
   for (const e of valid) {
-    const tag = e.tags.find((t) => t[0] === "i" && t[1]?.startsWith("bch:"));
-    if (tag && tag[2]) return { event: e, address: tag[1].slice(4), txid: tag[2] };
+    const c = claimFrom(e);
+    if (c) return c;
   }
   return null;
+}
+
+function claimFrom(e: Event): BindingClaim | null {
+  const tag = e.tags.find((t) => t[0] === "i" && t[1]?.startsWith("bch:"));
+  return tag && tag[2] ? { event: e, address: tag[1].slice(4), txid: tag[2] } : null;
+}
+
+/** Most recent bindings across all users, newest first, one per pubkey. */
+export async function fetchRecentBindings(limit = 24): Promise<BindingClaim[]> {
+  const events = await pool.querySync(
+    RELAYS,
+    { kinds: [BINDING_KIND], "#d": [BINDING_D_TAG], limit: limit * 2 },
+    { maxWait: 4000 },
+  );
+  const latest = new Map<string, Event>();
+  for (const e of events) {
+    if (!verifyEvent(e)) continue;
+    const prev = latest.get(e.pubkey);
+    if (!prev || e.created_at > prev.created_at) latest.set(e.pubkey, e);
+  }
+  return [...latest.values()]
+    .sort((a, b) => b.created_at - a.created_at)
+    .map(claimFrom)
+    .filter((c): c is BindingClaim => c !== null)
+    .slice(0, limit);
+}
+
+export async function fetchProfiles(pubkeys: string[]): Promise<Map<string, Profile>> {
+  const out = new Map<string, Profile>();
+  if (pubkeys.length === 0) return out;
+  const events = await pool.querySync(RELAYS, { kinds: [0], authors: pubkeys }, { maxWait: 3500 });
+  const newest = new Map<string, Event>();
+  for (const e of events) {
+    const p = newest.get(e.pubkey);
+    if (!p || e.created_at > p.created_at) newest.set(e.pubkey, e);
+  }
+  for (const [pk, e] of newest) {
+    try {
+      out.set(pk, JSON.parse(e.content) as Profile);
+    } catch {
+      /* ignore malformed profile */
+    }
+  }
+  return out;
+}
+
+/** A public note announcing a payment, tagging the recipient. */
+export function paymentNoteTemplate(recipient: string, amountBch: string, link: string): EventTemplate {
+  return {
+    kind: 1,
+    created_at: Math.floor(Date.now() / 1000),
+    tags: [
+      ["p", recipient],
+      ["t", "bitcoincash"],
+      ["t", "nostrbind"],
+    ],
+    content: `Just paid nostr:${npubOf(recipient)} ${amountBch} BCH, straight to their verified Bitcoin Cash address.\n\nCheck their NostrBind passport: ${link}`,
+  };
 }
 
 export interface Profile {

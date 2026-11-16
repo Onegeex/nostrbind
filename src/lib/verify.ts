@@ -1,7 +1,7 @@
 // Verification: re-checks both halves of a binding in the browser. No server is trusted.
 import { addressToLockingBytecode, normaliseAddress, parseCommitmentTx } from "./bch";
 import { getHistory, getRawTx } from "./chain";
-import { fetchBinding } from "./nostr";
+import { fetchBinding, type BindingClaim } from "./nostr";
 
 export interface Check {
   label: string;
@@ -39,11 +39,11 @@ export async function latestCommitmentFrom(address: string) {
   return null;
 }
 
-export async function verifyPubkey(pubkey: string): Promise<VerifyResult> {
+export async function verifyPubkey(pubkey: string, known?: BindingClaim | null): Promise<VerifyResult> {
   const checks: Check[] = [];
   const result: VerifyResult = { verified: false, pubkey, checks };
 
-  const claim = await fetchBinding(pubkey);
+  const claim = known ?? (await fetchBinding(pubkey));
   checks.push({
     label: "Nostr key signed a binding to a BCH address",
     ok: !!claim,
