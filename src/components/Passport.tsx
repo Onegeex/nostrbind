@@ -153,7 +153,7 @@ export function Passport({
           </div>
           <div>
             <dt>Nostr address</dt>
-            <dd>{data.profile?.nip05 || "None set"}</dd>
+            <dd>{data.profile?.nip05?.replace(/^_@/, "") || "None set"}</dd>
           </div>
           <div>
             <dt>Date of binding</dt>

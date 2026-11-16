@@ -88,7 +88,7 @@ export function Directory({ onInspect, onGetPassport }: { onInspect: (q: string)
                 </span>
                 <span className="ledger-who">
                   <strong>{name}</strong>
-                  <span>{profile?.nip05 || `${npub.slice(0, 16)}…`}</span>
+                  <span>{profile?.nip05?.replace(/^_@/, "") || `${npub.slice(0, 16)}…`}</span>
                 </span>
                 <span className="ledger-addr mono">{claim.address.replace("bitcoincash:", "").slice(0, 10)}…</span>
                 <span className={`ledger-status ${status}`}>{status === "verified" ? "Verified" : "Checking"}</span>
